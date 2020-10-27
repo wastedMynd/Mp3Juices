@@ -1,0 +1,7 @@
+venv
+.dockerignore
+.gitignore
+.git
+.idea
+Dockerfile
+chromedriver
