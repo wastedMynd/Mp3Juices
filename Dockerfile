@@ -2,32 +2,78 @@
 # Creation Date: 25 October 2020, 22:15
 # Author: Sizwe-se-Afrika Immaculate Mkhonza
 
-FROM alpine:latest
+# set the base image as
+FROM ubuntu:latest
 
 # setup app dir and copy code base on it...
-ENV app_dir=Mp3Juices_Downloader
-RUN mkdir -p $app_dir
-WORKDIR $app_dir
+ENV APP_DIR=Mp3Juices_Downloader
+
+# create app_dir directory
+RUN mkdir -p $APP_DIR
+
+# declare work directory; as $app_dir
+WORKDIR $APP_DIR
+
+# copy all app's files, and folders; to work directory.
+# note files and folders; metioned on .dockerignore, will be ignored, and not copied
 COPY . .
 
-# import code base dependencies
-RUN apk add --update wget && wget https://chromedriver.storage.googleapis.com/83.0.4103.14/chromedriver_linux64.zip
-RUN apk add --update unzip && unzip chromedriver_linux64.zip && rm chromedriver_linux64.zip && ls -a
-RUN apk add --update chromium && ln -s /usr/bin/chromium-browser /usr/bin/google-chrome
-RUN apk add --update python3 && apk add --update py-pip && apk add --update nano
-RUN pip install -r requirements.txt
+#region setup volume for usr/Downloads/mp3juices
 
-# setup volume for usr/Downloads/mp3juices
-ENV selenium_driver=$app_dir/chromedriver
-ENV users_downloads_folder=/home/sizwe/Downloads/mp3juices
-ENV docker_container_downloads_folder=/usr/Downlaods/mp3juices
-ENV mp3juices_download_path=$docker_container_downloads_folder
-RUN mkdir -p $docker_container_downloads_folder
-VOLUME $users_downloads_folder:$docker_container_downloads_folder
+# my                        Downloads/mp3juices folder
+ENV USERS_DOWNLOADS_FOLDER=$HOME/Downloads/mp3juices
+
+# this container's          Downloads/mp3juices folder
+ENV DOCKER_CONTAINER_DOWNLOADS_FOLDER=/Downloads/mp3juices
+
+# app's                     Downloads/mp3juices folder
+# is either mine or containter;
+# on container defualts to container's
+# on this app defualts to mine's
+ENV MP3JUICES_DOWNLOAD_PATH=$DOCKER_CONTAINER_DOWNLOADS_FOLDER
+
+# create container's        Downloads/mp3juices folder
+RUN mkdir -p $DOCKER_CONTAINER_DOWNLOADS_FOLDER
+
+# link my Downloads/mp3juices folder to container's Downloads/mp3juices folder
+VOLUME $USERS_DOWNLOADS_FOLDER:$DOCKER_CONTAINER_DOWNLOADS_FOLDER
+
+#endregion
+
+#region import code base dependencies
+RUN apt update && apt install -y wget && apt install -y unzip && apt install -y nano && apt install -y python3 && apt install -y python3-pip  && pip3 install -r requirements.txt
+
+# region chrome installation workflow along with chromedriver
+
+#  download chrome version 86.0.4240.111-1 on $app_dir
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+
+# install chrome on container
+RUN DEBIAN_FRONTEND="noninteractive" apt install -y -f ./google-chrome-stable_current_*.deb
+
+# remove or delete chrome's downloaded installlation file
+RUN rm ./google-chrome-stable_current_*.deb
+
+# download chromedriver version 86.0.4240.22 on $app_dir
+RUN wget https://chromedriver.storage.googleapis.com/86.0.4240.22/chromedriver_linux64.zip
+
+# unzip downloaded zip file
+RUN unzip chromedriver_linux*.zip
+
+# remove or delete downloaded zip file
+RUN rm chromedriver_linux*.zip
+
+# diplay list of files/folders on $app_dir
+RUN ls -l -a -F -s -h
+# endregion
+#endregion
 
 # app's entry point
-ENTRYPOINT ["/bin/sh", "-c" ]
+ENTRYPOINT   ["python3","playlist_download.py"]
 
-CMD ["python3", "-m", "unittest", "test.TestApp"]
-CMD ["python3","playlist_download.py"]
-CMD ["python3","app.py"]
+# after scripting this Dockerfile run this on command on this directory...
+# `docker build -t mp3juice:latest .`
+
+# and this command afterwards...
+# `docker run -d --name mp3juices_delicious -v $DOWNLOADS_MP3JIUCES:$DOCKER_DOWNLOADS_MP3JUICES mp3juices:latest`
+

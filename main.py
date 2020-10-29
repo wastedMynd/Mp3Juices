@@ -11,8 +11,8 @@ import cli_colour_utils as makeup
 
 mp3_juices_url = 'https://www.mp3juices.cc'
 
-env_path = os.environ.get("mp3juices_download_path")
-base_path = "/home/sizwe/Downloads/mp3juices"
+env_path = os.environ.get("MP3JUICES_DOWNLOAD_PATH")
+base_path = os.path.join(os.environ.get("HOME"), "Downloads/mp3juices")
 download_dir = base_path if env_path is None else env_path
 
 
@@ -27,9 +27,9 @@ def sleep(sleep_time=1.5, quite_mode=True):
 def get_browser(do_not_show_browser=True):
     setup_options = webdriver.ChromeOptions()
     setup_options.headless = do_not_show_browser
-    driver_path = os.environ.get('selenium_driver')
-    chrome_driver_path = driver_path if not (driver_path is None) else os.path.join(os.path.abspath('.'),"chromedriver")
-    assert chrome_driver_path is not None and os.path.exists(chrome_driver_path)
+    setup_options.add_argument('--no-sandbox')
+    setup_options.add_argument('--disable-dev-shm-usage')
+    chrome_driver_path = os.path.join(os.path.abspath('.'), "chromedriver")
     return webdriver.Chrome(chrome_driver_path, options=setup_options)
 
 
