@@ -5,6 +5,9 @@
 # set the base image as
 FROM ubuntu:latest
 
+# setup user
+ENV USER=sizwe
+
 # setup app dir and copy code base on it...
 ENV APP_DIR=Mp3Juices_Downloader
 
@@ -35,7 +38,7 @@ ENV MP3JUICES_DOWNLOAD_PATH=$DOCKER_CONTAINER_DOWNLOADS_FOLDER
 # create container's        Downloads/mp3juices folder
 RUN mkdir -p $DOCKER_CONTAINER_DOWNLOADS_FOLDER
 
-# link my Downloads/mp3juices folder to container's Downloads/mp3juices folder
+# link my Downloads/mp3juices folder to container's p/'Downloads/mp3juices folder
 VOLUME $USERS_DOWNLOADS_FOLDER:$DOCKER_CONTAINER_DOWNLOADS_FOLDER
 
 #endregion
@@ -64,16 +67,16 @@ RUN unzip chromedriver_linux*.zip
 RUN rm chromedriver_linux*.zip
 
 # diplay list of files/folders on $app_dir
-RUN ls -l -a -F -s -h
+RUN ls -Flash
 # endregion
 #endregion
 
 # app's entry point
-ENTRYPOINT   ["python3","playlist_download.py"]
+ENTRYPOINT   ["python3","playlist_download.py","&"]
 
 # after scripting this Dockerfile run this on command on this directory...
 # `docker build -t mp3juice:latest .`
 
 # and this command afterwards...
-# `docker run -d --name mp3juices_delicious -v $DOWNLOADS_MP3JIUCES:$DOCKER_DOWNLOADS_MP3JUICES mp3juices:latest`
+# `docker run -d --name mp3juices_delicious -v $DOWNLOADS_MP3JUICES:$DOCKER_DOWNLOADS_MP3JUICES mp3juices:latest`
 

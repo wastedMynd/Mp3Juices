@@ -1,53 +1,14 @@
-import os
-import time
-import random
 import re
-import threading
 
-from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException
-import requests
+
 import cli_colour_utils as makeup
+from downloader import initialize_download
+from driver import get_browser, get_element_child_count, get_xpath
+from utils import sleep
+from mp3juices_scrapper import scrape_query_field_and_search_for_query, scrape_submit_search_query_button
 
 mp3_juices_url = 'https://www.mp3juices.cc'
-
-env_path = os.environ.get("MP3JUICES_DOWNLOAD_PATH")
-base_path = os.path.join(os.environ.get("HOME"), "Downloads/mp3juices")
-download_dir = base_path if env_path is None else env_path
-
-
-def sleep(sleep_time=1.5, quite_mode=True):
-    if quite_mode:
-        time.sleep(sleep_time + 1.5)
-    else:
-        print(makeup.mockup_text_as_ok_blue(f"processing for {sleep_time} seconds..."))
-        time.sleep(sleep_time)
-
-
-def get_browser(do_not_show_browser=True):
-    setup_options = webdriver.ChromeOptions()
-    setup_options.headless = do_not_show_browser
-    setup_options.add_argument('--no-sandbox')
-    setup_options.add_argument('--disable-dev-shm-usage')
-    chrome_driver_path = os.path.join(os.path.abspath('.'), "chromedriver")
-    return webdriver.Chrome(chrome_driver_path, options=setup_options)
-
-
-def get_xpath(tag, attribute, value):
-    return f'//{tag}[@{attribute}="{value}"]'
-
-
-characters_to_replace = ('#', '<', '$', '+', '%', '>', '!', '`', '&', '*', "'", '|', '{', '?', '"', '=', '}', '/',
-                         ':', '\\', '@', ".")
-
-
-def get_file_name(title: str):
-    filename = title.strip()
-
-    for char in characters_to_replace:
-        filename = filename.replace(char, " ")
-
-    return filename.strip()
 
 
 # region selection as : single, all, range, and specific selection region
@@ -114,94 +75,6 @@ def get_single_selection_as_an_int_list(selection: str = None) -> list:
 
 # endregion
 
-def start_download(filename, download_url, query=None):
-    if download_url is None or filename is None:
-        print(makeup.mockup_text_as_warning_yellow('file not downloaded, url and filename not provided!'))
-        return False
-
-    placeholder_download_dir = os.path.join(download_dir, query) if query is not None else download_dir
-
-    os.makedirs(placeholder_download_dir, exist_ok=True)
-    downloaded_file_path = os.path.join(placeholder_download_dir, filename)
-
-    print(makeup.mockup_text_as_bold_white(f"downloading {filename} started..."), end='\n\r')
-
-    user_agent_list = [
-        ('Mozilla/5.0 (X11; Linux x86_64) '
-         'AppleWebKit/537.36 (KHTML, like Gecko) '
-         'Chrome/57.0.2987.110 '
-         'Safari/537.36'),  # chrome
-        ('Mozilla/5.0 (X11; Linux x86_64) '
-         'AppleWebKit/537.36 (KHTML, like Gecko) '
-         'Chrome/61.0.3163.79 '
-         'Safari/537.36'),  # chrome
-        ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) '
-         'Gecko/20100101 '
-         'Firefox/55.0'),  # firefox
-        ('Mozilla/5.0 (X11; Linux x86_64) '
-         'AppleWebKit/537.36 (KHTML, like Gecko) '
-         'Chrome/61.0.3163.91 '
-         'Safari/537.36'),  # chrome
-        ('Mozilla/5.0 (X11; Linux x86_64) '
-         'AppleWebKit/537.36 (KHTML, like Gecko) '
-         'Chrome/62.0.3202.89 '
-         'Safari/537.36'),  # chrome
-        ('Mozilla/5.0 (X11; Linux x86_64) '
-         'AppleWebKit/537.36 (KHTML, like Gecko) '
-         'Chrome/63.0.3239.108 '
-         'Safari/537.36'),  # chrome
-    ]
-
-    file_size = 0 if not os.path.exists(downloaded_file_path) else os.stat(downloaded_file_path).st_size
-
-    headers = {
-        "User-Agent": random.choice(user_agent_list),
-        'Accept-Language': 'en-US,en;q=0.5',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Range': f'bytes={file_size}-'
-    }
-
-    try:
-        with requests.get(download_url, headers=headers, stream=True) as mp3_file_to_download:
-            assert mp3_file_to_download.ok
-            with open(downloaded_file_path, 'a+b') as downloaded_file:
-                for chunk in mp3_file_to_download.iter_content(chunk_size=1024):
-                    downloaded_file.write(chunk)
-    except Exception as error:
-        print(makeup.mockup_text_as_fail_red(error))
-    finally:
-        if not os.path.exists(downloaded_file_path):
-            print(makeup.mockup_text_as_fail_red(f'{filename} not downloaded, something wrong happened!'), end='\n\r')
-            return False
-        else:
-            print(
-                makeup.mockup_text_as_ok_green(f'{filename} downloaded at, {downloaded_file_path}; download finished.'),
-                end='\n\r'
-            )
-            return True
-
-
-def get_element_child_count(element):
-    return 0 if element is None else int(element.get_attribute("childElementCount"))
-
-
-def initialize_download(option_type, results, entry_selected, mp3_results_holder, query=None):
-    if not (option_type == 'download'):
-        print(makeup.mockup_text_as_warning_yellow("selected option type, not download!"))
-        return None
-
-    download_element = results.find_element_by_id(f'download_{entry_selected + 1}')
-    options = download_element.find_element_by_class_name('options')
-    download_url = options.find_element_by_class_name('url').get_attribute('href')
-
-    filename = get_file_name(mp3_results_holder[entry_selected].get("title")) + '.mp3'
-    process = threading.Thread(target=start_download, args=(filename, download_url, query))
-    process.start()
-    process.join()
-
-
 def open_mp3_juices(search_query=None, selection_param=None, option_param=None, quite_mode=True) -> dict:
     """
     returns:
@@ -225,24 +98,13 @@ def open_mp3_juices(search_query=None, selection_param=None, option_param=None, 
     # endregion
 
     # region scrap the search_input_element and send search_query to search_input_element
-    try:
-        query_element = browser.find_element_by_xpath(get_xpath('input', 'name', 'query'))
-        if not quite_mode: print(makeup.mockup_text_as_bold_white(f"typing... query {search_query}"))
-        query_element.send_keys(search_query)
-    except NoSuchElementException:
-        print(makeup.mockup_text_as_bold_white(response := "Internet connection is down!"))
-        return {
-            "is_app_running": False,
-            "response": response
-        }
-
+    response = scrape_query_field_and_search_for_query(search_query, browser, quite_mode)
+    if not response.get("is_app_running"):
+        return response
     # endregion
 
-    sleep(2)
-
     # region scrap the search_submit_button_element and click on it.
-    browser.find_element_by_xpath(get_xpath("button", "type", "submit")).click()
-    if not quite_mode: print(makeup.mockup_text_as_bold_white(f"searching... query {search_query}"))
+    scrape_submit_search_query_button(search_query, browser, quite_mode)
     # endregion
 
     is_results_found = False

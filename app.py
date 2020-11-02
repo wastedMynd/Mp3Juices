@@ -9,7 +9,7 @@ def normal_entry_point():
         if (phrase := input(prompt)).lower() == "exit":
             is_app_running = False
         else:
-            meta = open_mp3_juices(phrase)
+            meta = open_mp3_juices(phrase, quite_mode=False)
             is_app_running = meta.get("is_app_running")
     else:
         print(makeup.mockup_text_as_ok_blue("have a nice day..."))

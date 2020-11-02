@@ -1,7 +1,9 @@
 import os
 import threading
 
-from main import sleep, download_dir, open_mp3_juices
+from main import open_mp3_juices
+from downloader import download_dir
+from utils import sleep
 
 
 def query_file_entry_point() -> None:
@@ -72,7 +74,8 @@ def query_file_entry_point() -> None:
                 request = open_mp3_juices(
                     search_query=meta_data[0],
                     selection_param=selection if selection != '' else "all",
-                    option_param=option if option != '' else "d"
+                    option_param=option if option != '' else "d",
+                    quite_mode=True
                 )
 
                 if request.get("response") != known_open_mp3_juices_responses[3].get("response").format(with_query):
@@ -83,9 +86,11 @@ def query_file_entry_point() -> None:
 
     for background_task in background_tasks:
         background_task.start()
-        sleep(60)
+        sleep(20)
+
+    for background_task in background_tasks:
         background_task.join()
-        sleep(30)
+        sleep(20)
 
     if not len(retain_queries):
         return None

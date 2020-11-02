@@ -1,24 +1,33 @@
-from main import characters_to_replace, get_file_name, get_range_selection_list, get_specific_selection_list, \
-    get_browser, mp3_juices_url
-from unittest import TestCase
+from main import get_range_selection_list, get_specific_selection_list, mp3_juices_url
+from driver import get_browser
+from utils import sleep
+from downloader import characters_to_replace_on_file_name, resolve_file_name
+from unittest import TestCase, skip
 import re
 
 
 class TestApp(TestCase):
+
+    # region driver.py testing
     def test_get_web_driver(self):
         with get_browser(do_not_show_browser=True) as driver:
+            sleep(2)
             self.assertIsNotNone(driver)
             driver.get(url=mp3_juices_url)
+            sleep(2)
             actual_title = driver.title
             self.assertIsNotNone(actual_title)
             self.assertEqual(actual_title, "MP3Juices - Free MP3 Downloads")
 
+    # endregion
+
+    # region main.py testing
     def test_file_name_do_not_contain_invalid_chars(self):
         title = "#my$ong%nyc.mp3"
-        result = get_file_name(title)
+        result = resolve_file_name(title)
 
         def iter_over_characters_to_replace(test_case, operation, expected):
-            for char in characters_to_replace:
+            for char in characters_to_replace_on_file_name:
                 test_case(operation(char), expected)
 
         def validate_invalid_char_and_getfilename(char):
@@ -29,7 +38,7 @@ class TestApp(TestCase):
         iter_over_characters_to_replace(
             self.assertEqual,
             operation=validate_invalid_char_and_getfilename,
-            expected="my ong nyc mp3"
+            expected="_my_ong_nyc_mp3"
         )
 
     def test_single_entry_selection_re(self):
@@ -93,3 +102,11 @@ class TestApp(TestCase):
                 get_specific_selection_list(selection),
                 get_entry_selection_split(selection)
             )
+
+    # endregion
+
+    # region downloader.py testing
+    @skip("test not implemented")
+    def test_change_download_file_permissions(self):
+        pass
+    # endregion
