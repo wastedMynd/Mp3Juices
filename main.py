@@ -12,7 +12,7 @@ mp3_juices_url = 'https://www.mp3juices.cc'
 
 
 # region selection as : single, all, range, and specific selection region
-def get_range_selection_list(selection: str = None):
+def get_range_selection_list(selection=None):
     if selection is None:
         return None
 
@@ -25,7 +25,7 @@ def get_range_selection_list(selection: str = None):
         return None
 
 
-def get_range_selection_as_an_int_list(selection: str = None):
+def get_range_selection_as_an_int_list(selection=None):
     if selection is None:
         return []
 
@@ -36,7 +36,7 @@ def get_range_selection_as_an_int_list(selection: str = None):
     return [int(selection_item) - 1 for selection_item in range_selection_as_a_str_list]
 
 
-def get_specific_selection_list(selection: str = None) -> list:
+def get_specific_selection_list(selection=None):
     if selection is None:
         return []
 
@@ -51,7 +51,7 @@ def get_specific_selection_list(selection: str = None) -> list:
         .split(',')
 
 
-def get_specific_selection_as_an_int_list(selection: str = None) -> list:
+def get_specific_selection_as_an_int_list(selection=None):
     if selection is None:
         return []
 
@@ -59,7 +59,7 @@ def get_specific_selection_as_an_int_list(selection: str = None) -> list:
     return [int(selection_item) - 1 for selection_item in specific_selection_as_a_str_list]
 
 
-def get_single_selection_list(selection: str = None) -> list:
+def get_single_selection_list(selection= None):
     if selection is None:
         return []
 
@@ -68,14 +68,14 @@ def get_single_selection_list(selection: str = None) -> list:
     return [] if match is None else [match.group(1)]
 
 
-def get_single_selection_as_an_int_list(selection: str = None) -> list:
-    return [] if len(selection_list := get_single_selection_list(selection)) == 0 else [int(s) - 1 for s in
-                                                                                        selection_list]
+def get_single_selection_as_an_int_list(selection= None):
+    selection_list = get_single_selection_list(selection)
+    return [] if len(selection_list) == 0 else [ int(s) - 1 for s in selection_list]
 
 
 # endregion
 
-def open_mp3_juices(search_query=None, selection_param=None, option_param=None, quite_mode=True) -> dict:
+def open_mp3_juices(search_query=None, selection_param=None, option_param=None, grouping=None, quite_mode=True):
     """
     returns:
     is_app_running True, response "search query is not provided!"
@@ -162,6 +162,7 @@ def open_mp3_juices(search_query=None, selection_param=None, option_param=None, 
             "title": mp3_result_result_title,
             "properties": {
                 'source': mp3_result_result_properties_source,
+                'grouping': grouping,
                 'time': mp3_result_result_properties_time,
                 'bit_rate': mp3_result_result_properties_bit_rate
             },
@@ -256,7 +257,7 @@ def open_mp3_juices(search_query=None, selection_param=None, option_param=None, 
                     try:
                         mp3_results_holder[entry].get("options").get(option_type).click()
                         sleep(30)
-                        initialize_download(option_type, results, entry, mp3_results_holder, search_query)
+                        initialize_download(option_type, results, entry, mp3_results_holder,grouping ,search_query)
                     except ElementClickInterceptedException:
                         mp3_title = mp3_results_holder[entry].get("title")
                         response = f"{makeup.mockup_text_as_header_purple(mp3_title)} " \

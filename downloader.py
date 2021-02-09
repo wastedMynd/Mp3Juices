@@ -17,7 +17,7 @@ characters_to_replace_on_file_name = (
 )
 
 
-def initialize_download(option_type, results, entry_selected, mp3_results_holder, query=None):
+def initialize_download(option_type, results, entry_selected, mp3_results_holder, grouping=None, query=None):
     if not (option_type == 'download'):
         print(makeup.mockup_text_as_warning_yellow("selected option type, not download!"))
         return None
@@ -26,16 +26,18 @@ def initialize_download(option_type, results, entry_selected, mp3_results_holder
     download_url = options.find_element_by_class_name('url').get_attribute('href')
 
     filename = mp3_results_holder[entry_selected].get("title")
-    Thread(target=start_download, args=(filename, download_url, query)).start()
+    Thread(target=start_download, args=(filename, download_url, grouping, query)).start()
 
 
-def start_download(filename, download_url, query=None):
+def start_download(filename, download_url, grouping=None, query=None):
     if download_url is None or filename is None:
         print(makeup.mockup_text_as_warning_yellow('file not downloaded, url and filename not provided!'))
         return False
 
-    placeholder_download_dir = os.path.join(download_dir,
-                                            resolve_file_name(query)) if query is not None else download_dir
+    download_path = download_dir if grouping is None else os.path.join(download_dir, grouping)
+
+    placeholder_download_dir = os.path.join(download_path,
+                                            resolve_file_name(query)) if query is not None else download_path
 
     os.makedirs(placeholder_download_dir, exist_ok=True)
     downloaded_file_path = os.path.join(placeholder_download_dir, resolve_file_name(filename) + ".mp3")
@@ -81,10 +83,18 @@ def start_download(filename, download_url, query=None):
 
     try:
         with requests.get(download_url, headers=headers, stream=True) as mp3_file_to_download:
-            assert mp3_file_to_download.ok
+            if (not mp3_file_to_download.ok) and (mp3_file_to_download.status_code not in range(200, 300)):
+                return False
+
+            download_file_size = int(mp3_file_to_download.headers.get('Content-Length'))
+            print(f'download file size {download_file_size}')
+            if file_size >= download_file_size:
+                return False
+
             with open(downloaded_file_path, 'a+b') as downloaded_file:
                 for chunk in mp3_file_to_download.iter_content(chunk_size=1024):
                     downloaded_file.write(chunk)
+
     except Exception as error:
         print(makeup.mockup_text_as_fail_red(error))
     finally:
